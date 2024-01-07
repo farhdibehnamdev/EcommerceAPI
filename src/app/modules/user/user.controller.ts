@@ -9,107 +9,162 @@ import {
   Query,
   UploadedFile,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
-  ApiCreatedResponse,
-  ApiForbiddenResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiTags,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-} from '@nestjs/swagger';
+
 import { AuthUser } from '@shared/decorators/auth-user.decorator';
 import { UploadFileSingle } from '@shared/decorators/file.decorator';
 import { Roles } from '@shared/decorators/roles.decorator';
 import { ENUM_FILE_TYPE } from '@shared/enums/file.enum';
 import { RoleTypeEnum } from '@shared/enums/role-type.enum';
+import { JwtPayload } from '@shared/interfaces/jwt-payload.interface';
 import { PaginationPipe } from '@shared/pipes/pagination.pipe';
 
 import { CreateUserDto } from './dtos/create-user.dto';
 import { FindUsersDto } from './dtos/find-users.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserService } from './user.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
+// @Controller('users')
+// @Roles(RoleTypeEnum.SuperAdmin, RoleTypeEnum.Admin)
+// export class UserController {
+//   constructor(private readonly service: UserService) {}
 
-@ApiTags('Users')
+//   @Post()
+//   async create(@Body() data: CreateUserDto) {
+//     return this.service.create(data);
+//   }
+
+//   @Get('me')
+//   @Roles(RoleTypeEnum.All)
+//   async getLoggedinUserDetails(@AuthUser() user: JwtPayload) {
+//     return this.service.getLoggedinUserDetails(user);
+//   }
+
+//   @Delete('me')
+//   @Roles(RoleTypeEnum.All)
+//   async deleteLoggedinUserDetails(@AuthUser() user: JwtPayload) {
+//     return this.service.deleteLoggedinUserDetails(user);
+//   }
+
+//   @UploadFileSingle('file', ENUM_FILE_TYPE.IMAGE)
+//   @Post('me/images/upload')
+//   @Roles(RoleTypeEnum.All)
+//   async uploadLoggedinUserImage(
+//     @AuthUser() user: JwtPayload,
+//     @UploadedFile() file: Express.Multer.File,
+//   ) {
+//     return this.service.uploadLoggedinUserImage(user, file);
+//   }
+
+//   @Put(':id')
+//   async updateById(@Param('id') id: string, @Body() data: UpdateUserDto) {
+//     return this.service.updateById(id, data);
+//   }
+
+//   @Get()
+//   async findAll(@Query(new PaginationPipe()) q: FindUsersDto) {
+//     return this.service.findPaginated((<any>q).filter, {
+//       ...(<any>q).options,
+//     });
+//   }
+
+//   @Get(':id')
+//   async findById(@Param('id') id: string) {
+//     return this.service.findById(id);
+//   }
+
+//   @Delete(':id')
+//   async deleteById(@Param('id') id: string) {
+//     this.service.deleteById(id);
+//   }
+
+//   @UploadFileSingle('file', ENUM_FILE_TYPE.IMAGE)
+//   @Post(':id/images/upload')
+//   async upload(
+//     @Param('id') id: string,
+//     @UploadedFile() file: Express.Multer.File,
+//   ) {
+//     return this.service.uploadImage(id, file);
+//   }
+// }
+
 @Controller('users')
-@ApiForbiddenResponse({
-  description:
-    'You are not authorized to access this endpoint, please contact the administrator!',
-})
-@ApiUnauthorizedResponse({
-  description: 'You are not authorized to access this endpoint, please login!',
-})
+@ApiTags('Users')
 @Roles(RoleTypeEnum.SuperAdmin, RoleTypeEnum.Admin)
 export class UserController {
   constructor(private readonly service: UserService) {}
 
   @Post()
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create User' })
-  @ApiBody({ type: CreateUserDto, description: 'User Data' })
-  @ApiCreatedResponse({ description: 'User has been successfully created.' })
-  @ApiBadRequestResponse({ description: 'Bad Request.' })
+  @ApiOperation({ summary: 'Create a user' })
+  @ApiResponse({
+    status: 201,
+    description: 'The user has been successfully created.',
+  })
+  @ApiBody({ type: CreateUserDto })
   async create(@Body() data: CreateUserDto) {
     return this.service.create(data);
   }
 
   @Get('me')
   @Roles(RoleTypeEnum.All)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get Logged in User Details' })
-  @ApiOkResponse({
-    description: 'Successfully fetched logged in user details.',
+  @ApiOperation({ summary: 'Get logged-in user details' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns details of the logged-in user.',
   })
-  async getLoggedinUserDetails(@AuthUser() user: any) {
-    return this.service.getLoggedinUserDetails(user._id);
+  async getLoggedinUserDetails(@AuthUser() user: JwtPayload) {
+    console.log('user :::', user);
+
+    return this.service.getLoggedinUserDetails(user);
   }
 
   @Delete('me')
-  @ApiBearerAuth()
   @Roles(RoleTypeEnum.All)
-  @ApiOperation({ summary: 'Delete Logged in User Details' })
-  @ApiOkResponse({
-    description: 'Successfully deleted logged in user details.',
+  @ApiOperation({ summary: 'Delete logged-in user details' })
+  @ApiResponse({
+    status: 204,
+    description: 'User details have been successfully deleted.',
   })
-  async deleteLoggedinUserDetails(@AuthUser() user: any) {
-    return this.service.deleteLoggedinUserDetails(user._id);
+  async deleteLoggedinUserDetails(@AuthUser() user: JwtPayload) {
+    return this.service.deleteLoggedinUserDetails(user);
   }
 
   @UploadFileSingle('file', ENUM_FILE_TYPE.IMAGE)
   @Post('me/images/upload')
   @Roles(RoleTypeEnum.All)
-  @ApiBearerAuth()
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload Logged in User Image' })
-  @ApiCreatedResponse({ description: 'Image has been successfully uploaded.' })
+  @ApiOperation({ summary: 'Upload an image for the logged-in user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Image has been successfully uploaded.',
+  })
   async uploadLoggedinUserImage(
-    @AuthUser() user: any,
+    @AuthUser() user: JwtPayload,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.service.uploadLoggedinUserImage(user._id, file);
+    return this.service.uploadLoggedinUserImage(user, file);
   }
 
   @Put(':id')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update User by ID' })
-  @ApiBody({ type: UpdateUserDto, description: 'New User Data' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  @ApiOkResponse({ description: 'User has been successfully updated.' })
-  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiOperation({ summary: 'Update a user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ type: UpdateUserDto })
   async updateById(@Param('id') id: string, @Body() data: UpdateUserDto) {
     return this.service.updateById(id, data);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all Users' })
-  @ApiQuery({ type: FindUsersDto, description: 'Pagination options' })
-  @ApiOkResponse({ description: 'Successfully fetched users.' })
+  @ApiOperation({ summary: 'Find users with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of users with pagination.',
+  })
+  @ApiQuery({ type: FindUsersDto })
   async findAll(@Query(new PaginationPipe()) q: FindUsersDto) {
     return this.service.findPaginated((<any>q).filter, {
       ...(<any>q).options,
@@ -117,32 +172,27 @@ export class UserController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get User by ID' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  @ApiOkResponse({ description: 'Successfully fetched user.' })
-  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiOperation({ summary: 'Find a user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
   async findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete User by ID' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  @ApiOkResponse({ description: 'User has been successfully deleted.' })
-  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiOperation({ summary: 'Delete a user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
   async deleteById(@Param('id') id: string) {
     this.service.deleteById(id);
   }
 
   @UploadFileSingle('file', ENUM_FILE_TYPE.IMAGE)
   @Post(':id/images/upload')
-  @ApiConsumes('multipart/form-data')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Upload User Image' })
-  @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  @ApiCreatedResponse({ description: 'Image has been successfully uploaded.' })
-  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiOperation({ summary: 'Upload an image for a user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Image has been successfully uploaded.',
+  })
   async upload(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,

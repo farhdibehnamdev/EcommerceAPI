@@ -4,12 +4,22 @@ import { ImageService } from '@modules/image/image.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AwsS3Service } from '@shared/aws/aws.service';
 import { IAwsS3Response } from '@shared/aws/interfaces/aws.interface';
+import { JwtPayload } from '@shared/interfaces/jwt-payload.interface';
 import { MessagesMapping } from '@shared/messages-mapping';
 import { BaseService } from '@shared/services/base.service';
 
 import { CreateUserDto } from './dtos/create-user.dto';
 import { IUserDocument } from './interfaces/user.interface';
 import { UserRepository } from './repositories/user.repository';
+import { RoleTypeEnum } from '@shared/enums/role-type.enum';
+
+interface IUserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: RoleTypeEnum;
+  avatar: Types.ObjectId;
+}
 
 @Injectable()
 export class UserService extends BaseService<UserRepository> {
@@ -20,20 +30,25 @@ export class UserService extends BaseService<UserRepository> {
   ) {
     super();
   }
-  async getLoggedinUserDetails(userId: string): Promise<IUserDocument> {
-    const user = await this.repository.findById(userId);
-
+  async getLoggedinUserDetails(payload: JwtPayload): Promise<any> {
+    const user = await this.repository.findById(payload.sub);
+    const newUser = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      email: user.email,
+      avatar: user.avatar,
+    };
     if (!user) {
       throw new HttpException(MessagesMapping['#9'], HttpStatus.NOT_FOUND);
     }
+    // user.password = undefined;
 
-    user.password = undefined;
-
-    return user;
+    return newUser;
   }
 
-  async deleteLoggedinUserDetails(userId: string): Promise<IUserDocument> {
-    const user = await this.repository.deleteById(userId);
+  async deleteLoggedinUserDetails(payload: JwtPayload): Promise<IUserDocument> {
+    const user = await this.repository.deleteById(payload.sub);
 
     if (!user) {
       throw new HttpException(MessagesMapping['#9'], HttpStatus.NOT_FOUND);
@@ -46,7 +61,6 @@ export class UserService extends BaseService<UserRepository> {
     id: string | Types.ObjectId,
     file: Express.Multer.File,
   ): Promise<IUserDocument> {
-    console.log(id);
     const user = await this.repository.findById(id);
 
     if (user.avatar) {
@@ -58,7 +72,6 @@ export class UserService extends BaseService<UserRepository> {
     }
 
     const content: Buffer = file.buffer;
-    console.log(content);
     const aws: IAwsS3Response = await this.awsService.s3PutItemInBucket(
       user._id,
       content,
@@ -75,10 +88,10 @@ export class UserService extends BaseService<UserRepository> {
   }
 
   async uploadLoggedinUserImage(
-    userId: string,
+    payload: JwtPayload,
     file: Express.Multer.File,
   ): Promise<IUserDocument> {
-    const user = await this.repository.deleteById(userId);
+    const user = await this.repository.deleteById(payload.sub);
 
     if (user.avatar) {
       const image = await this.imageService.findById(user.avatar);

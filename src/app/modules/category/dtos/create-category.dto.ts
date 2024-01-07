@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 
 export class CreateCategoryDto {
   @ApiProperty({
@@ -31,6 +32,5 @@ export class CreateCategoryDto {
     example: 'Category 1 description',
   })
   @IsString()
-  @IsNotEmpty()
   description: string;
 }
